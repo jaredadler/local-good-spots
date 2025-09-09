@@ -1,9 +1,10 @@
 import requests
 import os
 import re
+from typing import Callable
 
 
-def parse_tabelog_url(url_string):
+def tabelog_restaurant_url_to_filename(url_string) -> str:
     """
     Parse Tabelog URL to extract top-level area, lower-level area, and restaurant ID
     
@@ -18,37 +19,30 @@ def parse_tabelog_url(url_string):
     match = re.search(pattern, url_string)
     
     if match:
-        return match.group(1), match.group(2), match.group(3)
-    return None, None, None
+        return f"{'-'.join([match.group(1), match.group(2), match.group(3)])}.html"
+    else:
+        raise Exception("Tabelog restaurant URL does not match pattern")
 
 
-def scrape_url(target_url, output_directory):
+def scrape_url(target_url: str, output_directory: str, construct_filename: Callable[[str | None], str]) -> str | None:
     """
-    Scrape content from a URL and save to local directory
+    Scrape a URL and save to specified directory with a filename determined by supplied function construct_filename.
     
     Args:
-        target_url (str): The URL to scrape
-        output_directory (str): Directory to save the scraped content
+        :param output_directory: The URL to scrape
+        :param target_url: Directory to save the scraped content
+        :param construct_filename: A function that returns the filename to write the URL raw contents to
     """
     try:
         # Create output directory if it doesn't exist
         os.makedirs(output_directory, exist_ok=True)
-        
-        # Parse the Tabelog URL to get filename components
-        top_level, lower_level, restaurant_id = parse_tabelog_url(target_url)
-        
-        if top_level and lower_level and restaurant_id:
-            filename = f"{top_level}-{lower_level}-{restaurant_id}.html"
-        else:
-            # Fallback to original filename if URL parsing fails
-            filename = 'scraped_content.txt'
         
         # Send GET request to the URL
         response = requests.get(target_url)
         response.raise_for_status()  # Raise an exception for bad status codes
         
         # Save to file
-        output_file = os.path.join(output_directory, filename)
+        output_file = os.path.join(output_directory, construct_filename(target_url))
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(response.text)
         
@@ -68,4 +62,4 @@ if __name__ == "__main__":
     url = "https://tabelog.com/tokyo/A1317/A131706/13120700/"  # Replace with your actual URL, this is an example
     output_dir = f"{os.getenv('LOCAL_GOOD_SPOTS_OUTPUT_DIR', '/restaurants/')}restaurants/"  # Uses OUTPUT_DIR env var or defaults to "/restaurants/"
     
-    scrape_url(url, output_dir)
+    scrape_url(url, output_dir, tabelog_restaurant_url_to_filename)
