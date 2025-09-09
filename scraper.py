@@ -24,14 +24,15 @@ def tabelog_restaurant_url_to_filename(url_string) -> str:
         raise Exception("Tabelog restaurant URL does not match pattern")
 
 
-def scrape_url(target_url: str, output_directory: str, construct_filename: Callable[[str | None], str]) -> str | None:
+def scrape_url(target_url: str, output_directory: str, filename: str) -> str | None:
     """
     Scrape a URL and save to specified directory with a filename determined by supplied function construct_filename.
     
     Args:
+
         :param output_directory: The URL to scrape
         :param target_url: Directory to save the scraped content
-        :param construct_filename: A function that returns the filename to write the URL raw contents to
+        :param filename: filename for the saved content
     """
     try:
         # Create output directory if it doesn't exist
@@ -42,7 +43,7 @@ def scrape_url(target_url: str, output_directory: str, construct_filename: Calla
         response.raise_for_status()  # Raise an exception for bad status codes
         
         # Save to file
-        output_file = os.path.join(output_directory, construct_filename(target_url))
+        output_file = os.path.join(output_directory, filename)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(response.text)
         
@@ -62,4 +63,4 @@ if __name__ == "__main__":
     url = "https://tabelog.com/tokyo/A1317/A131706/13120700/"  # Replace with your actual URL, this is an example
     output_dir = f"{os.getenv('LOCAL_GOOD_SPOTS_OUTPUT_DIR', '/restaurants/')}restaurants/"  # Uses OUTPUT_DIR env var or defaults to "/restaurants/"
     
-    scrape_url(url, output_dir, tabelog_restaurant_url_to_filename)
+    scrape_url(url, output_dir, tabelog_restaurant_url_to_filename(url))
