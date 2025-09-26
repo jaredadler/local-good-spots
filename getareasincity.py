@@ -5,13 +5,13 @@ import csv
 
 def get_area_urls(city):
     """
-    Scrapes Tabelog sitemap for a city and writes area names and URLs to a CSV file.
-    
+    Scrapes Tabelog sitemap for a city and writes area names, area codes, and URLs to a CSV file.
+
     Args:
         city (str): City name (e.g., 'tokyo')
-        
+
     Returns:
-        list: Array of tuples containing (area_name, url) for each area in the city
+        list: Array of tuples containing (area_name, area_code, url) for each area in the city
     """
     sitemap_url = f"https://tabelog.com/sitemap/{city}/"
     
@@ -34,10 +34,15 @@ def get_area_urls(city):
                     full_url = href
                 else:
                     full_url = f"https://tabelog.com{href}"
-                
+
+                # Extract area code from URL
+                # URL pattern: https://tabelog.com/sitemap/{city}/A{code}/
+                url_parts = full_url.rstrip('/').split('/')
+                area_code = url_parts[-1] if url_parts else ''
+
                 # Extract area name from link text
                 area_name = link.get_text(strip=True)
-                area_data.append((area_name, full_url))
+                area_data.append((area_name, area_code, full_url))
         
         # Write results to CSV file
         output_dir = f"{os.getenv('LOCAL_GOOD_SPOTS_OUTPUT_DIR', '/restaurants/')}cities"
@@ -46,9 +51,9 @@ def get_area_urls(city):
         output_file = f"{output_dir}/{city}.csv"
         with open(output_file, 'w', encoding='utf-8', newline='') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-            writer.writerow(['area_name', 'url'])  # Header row
-            for area_name, url in area_data:
-                writer.writerow([area_name, url])
+            writer.writerow(['area_name', 'area_code', 'url'])  # Header row
+            for area_name, area_code, url in area_data:
+                writer.writerow([area_name, area_code, url])
         
         print(f"Wrote {len(area_data)} areas to {output_file}")
         return area_data
@@ -64,5 +69,5 @@ if __name__ == "__main__":
     # Example usage
     tokyo_areas = get_area_urls("tokyo")
     print(f"Found {len(tokyo_areas)} areas in Tokyo:")
-    for area_name, url in tokyo_areas:
-        print(f"{area_name}: {url}")
+    for area_name, area_code, url in tokyo_areas:
+        print(f"{area_name} ({area_code}): {url}")
